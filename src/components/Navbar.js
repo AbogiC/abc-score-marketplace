@@ -68,8 +68,8 @@ const Navbar = () => {
                 to={path}
                 className={`flex items-center space-x-2 px-4 py-2 rounded-lg transition-all duration-200 ${
                   isActivePath(path)
-                    ? "bg-indigo-100 text-indigo-700 font-medium"
-                    : "text-slate-600 hover:text-slate-900 hover:bg-slate-100"
+                    ? "bg-accent text-accent-foreground font-medium"
+                    : "text-muted-foreground hover:text-foreground hover:bg-accent"
                 }`}
               >
                 <Icon className="w-4 h-4" />
@@ -109,7 +109,7 @@ const Navbar = () => {
                       src={user?.photoURL}
                       alt={user?.displayName || user?.fullName}
                     />
-                    <AvatarFallback className="bg-indigo-100 text-indigo-700">
+                    <AvatarFallback className="bg-accent text-accent-foreground">
                       {(user?.displayName || user?.fullName || user?.email)
                         ?.charAt(0)
                         .toUpperCase()}
@@ -162,8 +162,8 @@ const Navbar = () => {
                   onClick={() => setIsMobileMenuOpen(false)}
                   className={`flex items-center space-x-3 px-4 py-3 rounded-lg transition-all duration-200 ${
                     isActivePath(path)
-                      ? "bg-indigo-100 text-indigo-700 font-medium"
-                      : "text-slate-600 hover:text-slate-900 hover:bg-slate-100"
+                      ? "bg-accent text-accent-foreground font-medium"
+                      : "text-muted-foreground hover:text-foreground hover:bg-accent"
                   }`}
                 >
                   <Icon className="w-5 h-5" />
@@ -174,7 +174,7 @@ const Navbar = () => {
                 <Link
                   to="/profile"
                   onClick={() => setIsMobileMenuOpen(false)}
-                  className="flex items-center space-x-3 px-4 py-3 rounded-lg text-slate-600 hover:text-slate-900 hover:bg-slate-100 transition-all duration-200"
+                  className="flex items-center space-x-3 px-4 py-3 rounded-lg text-muted-foreground hover:text-foreground hover:bg-accent transition-all duration-200"
                 >
                   <User className="w-5 h-5" />
                   <span>Profile</span>

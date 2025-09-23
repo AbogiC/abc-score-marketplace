@@ -38,11 +38,11 @@ import {
 } from "./ui/dialog";
 import { Label } from "./ui/label";
 import { Textarea } from "./ui/textarea";
+import { collection, getDocs, addDoc } from "firebase/firestore";
+import { db } from "../lib/firebase";
 
 // Set up PDF.js worker
 pdfjs.GlobalWorkerOptions.workerSrc = `//cdnjs.cloudflare.com/ajax/libs/pdf.js/${pdfjs.version}/pdf.worker.min.js`;
-
-const BACKEND_URL = process.env.REACT_APP_BACKEND_URL;
 
 const SheetMusicLibrary = () => {
   const { user } = useAuth();
@@ -72,9 +72,13 @@ const SheetMusicLibrary = () => {
 
   const fetchSheetMusic = async () => {
     try {
-      const response = await fetch(`${BACKEND_URL}/api/sheet-music`);
-      const data = await response.json();
-      setSheetMusic(data);
+      const sheetMusicRef = collection(db, "sheet-music");
+      const querySnapshot = await getDocs(sheetMusicRef);
+      const sheetMusicData = querySnapshot.docs.map((doc) => ({
+        id: doc.id,
+        ...doc.data(),
+      }));
+      setSheetMusic(sheetMusicData);
     } catch (error) {
       console.error("Error fetching sheet music:", error);
       toast.error("Failed to load sheet music");
@@ -101,13 +105,13 @@ const SheetMusicLibrary = () => {
   const getDifficultyColor = (difficulty) => {
     switch (difficulty?.toLowerCase()) {
       case "beginner":
-        return "bg-green-100 text-green-800";
+        return "bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200";
       case "intermediate":
-        return "bg-yellow-100 text-yellow-800";
+        return "bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200";
       case "advanced":
-        return "bg-red-100 text-red-800";
+        return "bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200";
       default:
-        return "bg-gray-100 text-gray-800";
+        return "bg-gray-100 text-gray-800 dark:bg-gray-900 dark:text-gray-200";
     }
   };
 
@@ -139,36 +143,20 @@ const SheetMusicLibrary = () => {
       if (formData.audioFile) {
         audioUrl = formData.audioFile.name;
       }
-      console.log(
-        "Form value: " +
-          formData.title +
-          ", " +
-          formData.composer +
-          ", " +
-          formData.genre +
-          ", " +
-          formData.difficulty +
-          ", " +
-          formData.price +
-          ", " +
-          formData.description +
-          ", " +
-          pdfUrl +
-          ", " +
-          audioUrl
-      );
-      // await addDoc(collection(db, "sheet-music"), {
-      //   title: formData.title,
-      //   composer: formData.composer,
-      //   genre: formData.genre,
-      //   difficulty: formData.difficulty,
-      //   price: parseFloat(formData.price),
-      //   description: formData.description,
-      //   pdf_url: pdfUrl,
-      //   sample_mp3_url: audioUrl,
-      //   createdAt: new Date(),
-      //   userId: user.uid,
-      // });
+      await addDoc(collection(db, "sheet-music"), {
+        title: formData.title,
+        composer: formData.composer,
+        genre: formData.genre,
+        difficulty: formData.difficulty,
+        price: parseFloat(formData.price),
+        description: formData.description,
+        pdf_url: pdfUrl,
+        sample_mp3_url: audioUrl,
+        published: true,
+        createdAt: new Date(),
+        updatedAt: new Date(),
+        userId: user.uid,
+      });
       toast.success("Sheet music added successfully");
       setIsModalOpen(false);
       setFormData({
@@ -212,7 +200,7 @@ const SheetMusicLibrary = () => {
         <h1 className="text-4xl font-bold gradient-text font-crimson">
           Sheet Music Library
         </h1>
-        <p className="text-xl text-slate-600 max-w-2xl mx-auto">
+        <p className="text-xl text-muted-foreground max-w-2xl mx-auto">
           Browse our collection of high-quality sheet music with PDF previews
           and audio samples
         </p>
@@ -229,7 +217,7 @@ const SheetMusicLibrary = () => {
         <CardContent>
           <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
             <div className="relative">
-              <Search className="absolute left-3 top-3 w-4 h-4 text-slate-400" />
+              <Search className="absolute left-3 top-3 w-4 h-4 text-muted" />
               <Input
                 placeholder="Search by title or composer..."
                 value={searchTerm}
@@ -268,7 +256,7 @@ const SheetMusicLibrary = () => {
             </Select>
             <Dialog open={isModalOpen} onOpenChange={setIsModalOpen}>
               <DialogTrigger asChild>
-                <Button className="btn-animated bg-indigo-600 hover:bg-indigo-700">
+                <Button className="btn-animated">
                   <Upload className="w-4 h-4 mr-2" />
                   Add Sheet Music
                 </Button>
@@ -404,11 +392,11 @@ const SheetMusicLibrary = () => {
       {filteredMusic.length === 0 ? (
         <Card className="glass">
           <CardContent className="text-center py-12">
-            <Music className="w-16 h-16 text-slate-400 mx-auto mb-4" />
-            <h3 className="text-xl font-semibold text-slate-600 mb-2">
+            <Music className="w-16 h-16 text-muted mx-auto mb-4" />
+            <h3 className="text-xl font-semibold text-muted-foreground mb-2">
               No Sheet Music Found
             </h3>
-            <p className="text-slate-500">
+            <p className="text-muted-foreground">
               Try adjusting your search or filter criteria.
             </p>
           </CardContent>
@@ -420,10 +408,10 @@ const SheetMusicLibrary = () => {
               <CardHeader>
                 <div className="flex items-start justify-between">
                   <div className="flex-1">
-                    <CardTitle className="text-lg font-crimson group-hover:text-indigo-600 transition-colors">
+                    <CardTitle className="text-lg font-crimson group-hover:text-primary transition-colors">
                       {sheet.title}
                     </CardTitle>
-                    <CardDescription className="font-medium text-slate-600">
+                    <CardDescription className="font-medium text-muted-foreground">
                       by {sheet.composer}
                     </CardDescription>
                   </div>
@@ -439,12 +427,12 @@ const SheetMusicLibrary = () => {
                     >
                       {sheet.difficulty}
                     </Badge>
-                    <span className="text-lg font-bold text-indigo-600">
+                    <span className="text-lg font-bold text-primary">
                       ${sheet.price?.toFixed(2) || "0.00"}
                     </span>
                   </div>
 
-                  <p className="text-sm text-slate-600 line-clamp-3">
+                  <p className="text-sm text-muted-foreground line-clamp-3">
                     {sheet.description}
                   </p>
 
@@ -473,7 +461,7 @@ const SheetMusicLibrary = () => {
                     )}
                   </div>
 
-                  <Button className="w-full btn-animated bg-indigo-600 hover:bg-indigo-700">
+                  <Button className="w-full btn-animated">
                     <Download className="w-4 h-4 mr-2" />
                     Purchase & Download
                   </Button>
@@ -503,7 +491,7 @@ const SheetMusicLibrary = () => {
                 <Page pageNumber={1} width={600} />
               </Document>
               {numPages && numPages > 1 && (
-                <p className="text-center mt-2 text-slate-600">
+                <p className="text-center mt-2 text-muted-foreground">
                   Page 1 of {numPages} (Preview only)
                 </p>
               )}

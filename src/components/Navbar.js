@@ -23,6 +23,7 @@ import {
 } from "lucide-react";
 import { toast } from "sonner";
 import ThemeToggle from "./ThemeToggle";
+import logo from "../assets/images/music_marketplace.png";
 
 const Navbar = () => {
   const { user, logout } = useAuth();
@@ -54,7 +55,7 @@ const Navbar = () => {
         <div className="flex items-center justify-between h-16">
           {/* Logo */}
           <Link to="/" className="flex items-center space-x-2 group">
-            <Music className="w-8 h-8 text-indigo-600 group-hover:text-indigo-700 transition-colors" />
+            <img src={logo} alt="ABC Music Marketplace" className="w-10" />
             <span className="font-bold text-xl gradient-text font-crimson">
               Sheet Music
             </span>

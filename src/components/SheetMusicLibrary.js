@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { useAuth } from "../contexts/AuthContext";
+import { useTheme } from "../contexts/ThemeContext";
 import {
   Card,
   CardContent,
@@ -22,11 +23,15 @@ import {
   Search,
   Filter,
   Play,
+  Square,
   Download,
   Eye,
   Upload,
+  X,
 } from "lucide-react";
 import { Document, Page, pdfjs } from "react-pdf";
+import "react-pdf/dist/Page/TextLayer.css";
+import "react-pdf/dist/Page/AnnotationLayer.css";
 import { toast } from "sonner";
 import {
   Dialog,
@@ -42,10 +47,11 @@ import { collection, getDocs, addDoc } from "firebase/firestore";
 import { db } from "../lib/firebase";
 
 // Set up PDF.js worker
-pdfjs.GlobalWorkerOptions.workerSrc = `//cdnjs.cloudflare.com/ajax/libs/pdf.js/${pdfjs.version}/pdf.worker.min.js`;
+pdfjs.GlobalWorkerOptions.workerSrc = "/pdf.worker.min.js";
 
 const SheetMusicLibrary = () => {
   const { user } = useAuth();
+  const { theme } = useTheme();
   const [sheetMusic, setSheetMusic] = useState([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState("");
@@ -55,6 +61,8 @@ const SheetMusicLibrary = () => {
   const [numPages, setNumPages] = useState(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [submitting, setSubmitting] = useState(false);
+  const [currentAudio, setCurrentAudio] = useState(null);
+  const [playingUrl, setPlayingUrl] = useState(null);
   const [formData, setFormData] = useState({
     title: "",
     composer: "",
@@ -120,11 +128,30 @@ const SheetMusicLibrary = () => {
   };
 
   const playAudio = (audioUrl) => {
-    const audio = new Audio(audioUrl);
-    audio.play().catch((error) => {
-      console.error("Error playing audio:", error);
-      toast.error("Failed to play audio sample");
-    });
+    if (currentAudio && playingUrl === audioUrl) {
+      // Stop the current audio
+      currentAudio.pause();
+      currentAudio.currentTime = 0;
+      setCurrentAudio(null);
+      setPlayingUrl(null);
+    } else {
+      // Stop any current audio
+      if (currentAudio) {
+        currentAudio.pause();
+        currentAudio.currentTime = 0;
+      }
+      const audio = new Audio(audioUrl);
+      setCurrentAudio(audio);
+      setPlayingUrl(audioUrl);
+      audio.onended = () => {
+        setCurrentAudio(null);
+        setPlayingUrl(null);
+      };
+      audio.play().catch((error) => {
+        console.error("Error playing audio:", error);
+        toast.error("Failed to play audio sample");
+      });
+    }
   };
 
   const handleSubmit = async (e) => {
@@ -441,7 +468,9 @@ const SheetMusicLibrary = () => {
                       <Button
                         size="sm"
                         variant="outline"
-                        onClick={() => setPreviewPdf(sheet.pdf_url)}
+                        onClick={() =>
+                          setPreviewPdf(`/scores/pdf/${sheet.pdf_url}`)
+                        }
                         className="flex-1"
                       >
                         <Eye className="w-4 h-4 mr-2" />
@@ -452,16 +481,36 @@ const SheetMusicLibrary = () => {
                       <Button
                         size="sm"
                         variant="outline"
-                        onClick={() => playAudio(sheet.sample_mp3_url)}
+                        onClick={() =>
+                          playAudio(`/scores/audio/${sheet.sample_mp3_url}`)
+                        }
                         className="flex-1"
                       >
-                        <Play className="w-4 h-4 mr-2" />
-                        Listen
+                        {playingUrl ===
+                        `/scores/audio/${sheet.sample_mp3_url}` ? (
+                          <Square className="w-4 h-4 mr-2" />
+                        ) : (
+                          <Play className="w-4 h-4 mr-2" />
+                        )}
+                        {playingUrl === `/scores/audio/${sheet.sample_mp3_url}`
+                          ? "Stop"
+                          : "Listen"}
                       </Button>
                     )}
                   </div>
 
-                  <Button className="w-full btn-animated">
+                  <Button
+                    className="w-full btn-animated"
+                    onClick={() => {
+                      const message = `*${sheet.title} - ${sheet.composer}*\n\nI interested with this sheet music, could you give me more information about purchasing this score? Thank You.`;
+                      window.open(
+                        `https://wa.me/+6281334178147?text=${encodeURIComponent(
+                          message
+                        )}`,
+                        "_blank"
+                      );
+                    }}
+                  >
                     <Download className="w-4 h-4 mr-2" />
                     Purchase & Download
                   </Button>
@@ -474,12 +523,24 @@ const SheetMusicLibrary = () => {
 
       {/* PDF Preview Modal */}
       {previewPdf && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-lg max-w-4xl max-h-[90vh] overflow-auto">
-            <div className="p-4 border-b flex items-center justify-between">
-              <h3 className="text-lg font-semibold">PDF Preview</h3>
-              <Button variant="ghost" onClick={() => setPreviewPdf(null)}>
-                ×
+        <div
+          className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4"
+          style={{ marginTop: 0 }}
+        >
+          <div
+            className="bg-white dark:bg-gray-800 rounded-lg max-w-4xl max-h-[90vh] overflow-auto"
+            style={{ scrollbarWidth: "none" }}
+          >
+            <div className="p-4 border-b border-gray-200 dark:border-gray-700 flex items-center justify-between">
+              <h3 className="text-lg font-semibold text-gray-900 dark:text-white">
+                PDF Preview
+              </h3>
+              <Button
+                variant="ghost"
+                onClick={() => setPreviewPdf(null)}
+                className="text-gray-900 dark:text-white"
+              >
+                <X />
               </Button>
             </div>
             <div className="p-4">
